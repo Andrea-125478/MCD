@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semáforo de Riesgo</title>
+    <style>
+        body {
+            background-color: #E8F9F3;
+            color: #006361;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        p {
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px; /* Espaciado entre grupos */
+            display: flex;
+            justify-content: space-between; /* Espacio entre columnas */
+        }
+
+        .form-field {
+            width: 48%; /* Cada campo ocupa el 48% del ancho */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px; /* Margen inferior para separación */
+        }
+
+        input {
+            width: 100%; /* Ancho completo del campo de entrada */
+            padding: 10px;
+            border: 1px solid #006361;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #006361;
+            color: white;
+            border: none;
+            padding: 10px 0; /* Cambiar padding para un botón más pequeño */
+            border-radius: 5px;
+            cursor: pointer;
+            width: 50%; /* Ancho del botón */
+            margin: 20px auto; /* Centrar el botón */
+            display: block; /* Mostrar como bloque para centrar */
+        }
+
+        button:hover {
+            background-color: #004d4d; /* Color más oscuro al pasar el ratón */
+        }
+
+        #resultado {
+            text-align: center; 
+            margin-top: 20px; 
+            font-size: 1.2em; 
+            color: #006361; 
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Semáforo de Riesgo</h1>
+    <p>Advisory para análisis de crédito</p>
+
+    <form id="prediccion-form">
+        <div class="form-group">
+            <div class="form-field">
+                <label for="ZC">ZC:</label>
+                <input type="text" id="ZC" name="ZC" required>
+            </div>
+            <div class="form-field">
+                <label for="TM">TM:</label>
+                <input type="text" id="TM" name="TM" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="form-field">
+                <label for="CP">CP:</label>
+                <input type="text" id="CP" name="CP" required>
+            </div>
+            <div class="form-field">
+                <label for="Md">Md:</label>
+                <input type="text" id="Md" name="Md" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="form-field">
+                <label for="ISPZ">ISPZ:</label>
+                <input type="text" id="ISPZ" name="ISPZ" required>
+            </div>
+            <div class="form-field">
+                <label for="ECZ">ECZ:</label>
+                <input type="text" id="ECZ" name="ECZ" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="form-field">
+                <label for="MFCZ">MFCZ:</label>
+                <input type="text" id="MFCZ" name="MFCZ" required>
+            </div>
+            <div class="form-field">
+                <label for="Pt">Pt:</label>
+                <input type="text" id="Pt" name="Pt" required>
+            </div>
+        </div>
+        <button type="submit">Enviar</button>
+    </form>
+
+    <div id="resultado"></div> <!-- Aquí se mostrará la respuesta -->
+
+    <script>
+        document.getElementById('prediccion-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Evitar el envío normal del formulario
+
+            const formData = new FormData(this);
+            const jsonData = {};
+
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(jsonData),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Convertir la probabilidad a porcentaje
+                const probabilidadExitosa = (data.probabilidad_exitosa * 100).toFixed(2);
+                let mensajeRiesgo;
+
+                // Determinar el mensaje de riesgo
+                if (data.probabilidad_exitosa < 0.34) {
+                    mensajeRiesgo = "Riesgo bajo";
+                } else if (data.probabilidad_exitosa <= 0.66) {
+                    mensajeRiesgo = "Riesgo medio";
+                } else {
+                    mensajeRiesgo = "Riesgo alto";
+                }
+
+                // Mostrar el resultado en la página
+                document.getElementById('resultado').innerText = 
+                    `La probabilidad de que este cliente sea NO EXITOSO: ${probabilidadExitosa}%\n${mensajeRiesgo}`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Muestra un mensaje de error en la página
+                document.getElementById('resultado').innerText = 'Hubo un error en la solicitud';
+            });
+        });
+    </script>
+</body>
+
+</html>
